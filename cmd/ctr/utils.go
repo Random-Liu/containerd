@@ -43,7 +43,7 @@ var (
 
 	labelFlag = cli.StringSliceFlag{
 		Name:  "label",
-		Usage: "labels to attach to the pulled image",
+		Usage: "labels to attach to the pulled (imported) image",
 	}
 
 	registryFlags = []cli.Flag{
