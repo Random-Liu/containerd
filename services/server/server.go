@@ -160,12 +160,12 @@ func New(ctx context.Context, config *srvconfig.Config) (*Server, error) {
 			} else {
 				log.G(ctx).WithError(err).Warnf("failed to load plugin %s", id)
 			}
-			if _, ok := required[p.ID]; ok {
+			if _, ok := required[id]; ok {
 				return nil, errors.Wrapf(err, "load required plugin %s", id)
 			}
 			continue
 		}
-		delete(required, p.ID)
+		delete(required, id)
 		// check for grpc services that should be registered with the server
 		if src, ok := instance.(plugin.Service); ok {
 			grpcServices = append(grpcServices, src)

@@ -36,10 +36,10 @@ type Config struct {
 	Debug Debug `toml:"debug"`
 	// Metrics and monitoring settings
 	Metrics MetricsConfig `toml:"metrics"`
-	// DisabledPlugins are IDs of plugins to disable. Disabled plugins won't be
+	// DisabledPlugins are URIs of plugins to disable. Disabled plugins won't be
 	// initialized and started.
 	DisabledPlugins []string `toml:"disabled_plugins"`
-	// RequiredPlugins are IDs of required plugins. Containerd exits if any
+	// RequiredPlugins are URIs of required plugins. Containerd exits if any
 	// required plugin doesn't exist or fails to be initialized or started.
 	RequiredPlugins []string `toml:"required_plugins"`
 	// Plugins provides plugin specific configuration for the initialization of a plugin
