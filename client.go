@@ -88,7 +88,9 @@ func New(address string, opts ...ClientOpt) (*Client, error) {
 		copts.timeout = 10 * time.Second
 	}
 
-	c := &Client{}
+	c := &Client{
+		defaultns: copts.defaultns,
+	}
 
 	if copts.defaultRuntime != "" {
 		c.runtime = copts.defaultRuntime
@@ -141,9 +143,8 @@ func New(address string, opts ...ClientOpt) (*Client, error) {
 	}
 
 	// check namespace labels for default runtime
-	if copts.defaultRuntime == "" && copts.defaultns != "" {
-		ctx := namespaces.WithNamespace(context.Background(), copts.defaultns)
-		if label, err := c.GetLabel(ctx, defaults.DefaultRuntimeNSLabel); err != nil {
+	if copts.defaultRuntime == "" && c.defaultns != "" {
+		if label, err := c.GetLabel(context.Background(), defaults.DefaultRuntimeNSLabel); err != nil {
 			return nil, err
 		} else if label != "" {
 			c.runtime = label
@@ -163,14 +164,14 @@ func NewWithConn(conn *grpc.ClientConn, opts ...ClientOpt) (*Client, error) {
 		}
 	}
 	c := &Client{
-		conn:    conn,
-		runtime: fmt.Sprintf("%s.%s", plugin.RuntimePlugin, runtime.GOOS),
+		defaultns: copts.defaultns,
+		conn:      conn,
+		runtime:   fmt.Sprintf("%s.%s", plugin.RuntimePlugin, runtime.GOOS),
 	}
 
 	// check namespace labels for default runtime
-	if copts.defaultRuntime == "" && copts.defaultns != "" {
-		ctx := namespaces.WithNamespace(context.Background(), copts.defaultns)
-		if label, err := c.GetLabel(ctx, defaults.DefaultRuntimeNSLabel); err != nil {
+	if copts.defaultRuntime == "" && c.defaultns != "" {
+		if label, err := c.GetLabel(context.Background(), defaults.DefaultRuntimeNSLabel); err != nil {
 			return nil, err
 		} else if label != "" {
 			c.runtime = label
@@ -190,6 +191,7 @@ type Client struct {
 	connMu    sync.Mutex
 	conn      *grpc.ClientConn
 	runtime   string
+	defaultns string
 	connector func() (*grpc.ClientConn, error)
 }
 
@@ -491,7 +493,10 @@ func writeIndex(ctx context.Context, index *ocispec.Index, client *Client, ref s
 func (c *Client) GetLabel(ctx context.Context, label string) (string, error) {
 	ns, err := namespaces.NamespaceRequired(ctx)
 	if err != nil {
-		return "", err
+		if c.defaultns == "" {
+			return "", err
+		}
+		ns = c.defaultns
 	}
 
 	srv := c.NamespaceService()
