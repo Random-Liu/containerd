@@ -65,6 +65,7 @@ type Init struct {
 	Platform     proc.Platform
 	io           runc.IO
 	runtime      *runc.Runc
+	pausing      *atomicBool
 	status       int
 	exited       time.Time
 	pid          int
@@ -99,6 +100,7 @@ func New(id string, runtime *runc.Runc, stdio proc.Stdio) *Init {
 	p := &Init{
 		id:        id,
 		runtime:   runtime,
+		pausing:   new(atomicBool),
 		stdio:     stdio,
 		status:    0,
 		waitBlock: make(chan struct{}),
@@ -228,17 +230,14 @@ func (p *Init) ExitedAt() time.Time {
 
 // Status of the process
 func (p *Init) Status(ctx context.Context) (string, error) {
+	if p.pausing.get() {
+		return "pausing", nil
+	}
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	c, err := p.runtime.State(ctx, p.id)
-	if err != nil {
-		if strings.Contains(err.Error(), "does not exist") {
-			return "stopped", nil
-		}
-		return "", p.runtimeError(err, "OCI runtime state failed")
-	}
-	return c.Status, nil
+	return p.initState.Status(ctx)
 }
 
 // Start the init process
