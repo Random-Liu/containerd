@@ -18,6 +18,8 @@ package config
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -353,6 +355,14 @@ func ValidatePluginConfig(ctx context.Context, c *PluginConfig) error {
 		}
 		for endpoint, auth := range c.Registry.Auths {
 			auth := auth
+			u, err := url.Parse(endpoint)
+			if err != nil {
+				return fmt.Errorf("failed to parse registry url %q from `registry.auths`: %v", endpoint, err)
+			}
+			if u.Scheme != "" {
+				// Do not include the scheme in the new registry config.
+				endpoint = u.Host
+			}
 			config := c.Registry.Configs[endpoint]
 			config.Auth = &auth
 			c.Registry.Configs[endpoint] = config
